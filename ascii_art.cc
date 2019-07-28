@@ -20,7 +20,7 @@ template <typename T> constexpr T alignMultipleOfTwo(const T &value, const T &al
 }
 
 int main() {
-  std::ifstream picture("test1.bmp", std::ios::binary);
+  std::ifstream picture("test6.bmp", std::ios::binary);
   if (!picture.is_open()) {
     std::cerr << "Unable to open picture." << std::endl;
     exit(1);
@@ -56,41 +56,69 @@ int main() {
   // Done with the ifstream
   picture.close();
 
+  // must be divisable by 3
+  uint32_t res = 9;
+  constexpr static uint32_t pixelDataWidth = 3;
+
+  std::vector<uint32_t> output(((width * pixelDataWidth * height) / res) + 1, 0);
+  uint32_t widthMultiplier = 0;
+  size_t tmpCount = 0;
+
+  for (int32_t i = ((width * pixelDataWidth * height) / res); i >= 0; i -= pixelDataWidth) {
+    if (tmpCount >= width) {
+      // This could cut lines at the end, this is just temporarily
+      if ((i - width * pixelDataWidth * res / 3) <= width * pixelDataWidth * res / 3) {
+        break;
+      }
+      i -= width * pixelDataWidth * res / 3;
+      tmpCount = 0;
+    }
+    ++tmpCount;
+    for (uint32_t j = 0; j < res; ++j) {
+      if (j != 0 && j % (res / 3) == 0) {
+        widthMultiplier += width * pixelDataWidth;
+      }
+      // RGB not in correct order, but it does not matter for the sake of this program, order is: BGR
+      output.at(i) +=
+          static_cast<uint32_t>(imageData[i + ((j % (res / 3) + 1) * pixelDataWidth) + widthMultiplier]) +
+          static_cast<uint32_t>(imageData[i + 1 + ((j % (res / 3) + 1) * pixelDataWidth) + widthMultiplier]) +
+          static_cast<uint32_t>(imageData[i + 2 + ((j % (res / 3) + 1) * pixelDataWidth) + widthMultiplier]);
+    }
+    tmpCount = 0;
+    output.at(i) = (output.at(i) / res);
+    widthMultiplier = 0;
+  }
+
   size_t count = 0;
+  for (auto i : output) {
 
-  // RGB not in correct order, but it does not matter for the sake of this program, order is: BGR
-  for (int32_t i = width*3 * height ; i >= 0 ; i -= 3) {
-    // Add all colors together
-    uint32_t RGB = static_cast<uint32_t>(imageData[i]) + static_cast<uint32_t>(imageData[i + 1]) +
-                   static_cast<uint32_t>(imageData[i + 2]);
-
-    if (RGB < 50) {
+    if (i < 50) {
       std::cout << " ";
     }
-    if (RGB > 50 && RGB < 100) {
+    if (i > 50 && i < 100) {
       std::cout << ".";
     }
-    if (RGB > 100 && RGB < 150) {
+    if (i > 100 && i < 150) {
       std::cout << ",";
     }
-    if (RGB > 150 && RGB < 200) {
+    if (i > 150 && i < 200) {
       std::cout << "\"";
     }
-    if (RGB > 200 && RGB < 250) {
+    if (i > 200 && i < 250) {
       std::cout << "¤";
     }
-    if (RGB > 250 && RGB < 300) {
+    if (i > 250 && i < 300) {
       std::cout << "#";
     }
-    if (RGB > 300 && RGB < 350) {
+    if (i > 300 && i < 350) {
       std::cout << "@";
     }
-    if (RGB > 350) {
+    if (i > 350) {
       std::cout << "$";
     }
 
     // Creates new lines when width is reached
-    if (count >= width) {
+    if (count >= width / (res / 3)) {
       std::cout << '\n';
       count = 0;
     }
